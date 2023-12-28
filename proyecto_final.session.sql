@@ -70,6 +70,58 @@ CREATE TABLE IF NOT EXISTS Afectacion(
 );
 
 -- @block
+-- Trigger para asegurarse de que la fecha final sea mayor que la fecha inicial en la tabla de afectacion
+CREATE TRIGGER verificarFechas
+BEFORE INSERT ON Afectacion
+FOR EACH ROW
+BEGIN
+    IF NEW.Fecha_inicio > NEW.Fecha_final THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La fecha de inicio no puede ser mayor a la final';
+    END IF;
+END;
+
+-- @block
+-- Trigger que previene que se borre un registro en desastres si ya esta referenciado en Afectacion
+CREATE TRIGGER permitirEliminacionDesastre
+BEFORE DELETE ON Desastre
+FOR EACH ROW
+BEGIN
+    DECLARE desastreUsado INT;
+    SELECT COUNT(*) INTO desastreUsado FROM afectacion WHERE Desastre = OLD.Desastre_id;
+    IF desastreUsado > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se puede eliminar un desastre que esta en uso';
+    END IF;
+END;
+
+-- @block
+-- Trigger para asegurar que al registrar un desastre en las entidades hijas, tambien lo haga en la padre
+CREATE TRIGGER insertarEnDesastreNatural
+BEFORE INSERT ON DesastreNatural
+FOR EACH ROW
+BEGIN
+    INSERT INTO Desastre (Desastre_id) VALUES (NEW.Desastre_id);
+END;
+
+CREATE TRIGGER insertarEnSocial
+BEFORE INSERT ON DesastreSocial
+FOR EACH ROW
+BEGIN
+    INSERT INTO Desastre (Desastre_id) VALUES (NEW.Desastre_id);
+END;
+
+-- @block
+-- Aserto para reforzar que no ocurra un problema de fechas
+ALTER TABLE Afectacion
+ADD CONSTRAINT chk_Fechas CHECK (Fecha_inicio <= Fecha_final);
+
+-- @block
+ALTER TABLE DesastreNatural
+-- Asegurar que la magnitud en desastre natural no pase de 10
+ADD CONSTRAINT chk_Magnitud CHECK (Magnitud BETWEEN 1 AND 10);
+
+-- @block
 DROP TABLE IF EXISTS desastresocial, DesastreNatural, GruposDeInteres, Escala, Tipos, Desastre, Afectacion, Ubicacion, Pais;
 
 -- @block
