@@ -327,6 +327,15 @@ DELETE FROM DesastreSocial;
 -- @block
 DELETE FROM Desastre;
 
+-- @block
+DELETE FROM Afectacion;
+
+-- @block
+DELETE FROM DesastreNatural WHERE Desastre_id BETWEEN 1 AND 20;
+
+-- @block
+DELETE FROM GruposDeInteres WHERE Grupo_id BETWEEN 21 AND 40;
+
 
 -- @block
 SELECT * FROM Escala;
